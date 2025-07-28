@@ -1,51 +1,74 @@
 name: CI/CD for Minikube
+
 on:
- push:
-   branches:
-     - main
+  push:
+    branches:
+      - main
+
 jobs:
- build-and-deploy:
-   runs-on: ubuntu-latest
-   steps:
-   - name: Checkout code
-     uses: actions/checkout@v3
-   - name: Set up Docker Buildx
-     uses: docker/setup-buildx-action@v2
-   - name: Login to Docker Hub
-     uses: docker/login-action@v2
-     with:
-       username: ${{ secrets.DOCKERHUB_USERNAME }}
-       password: ${{ secrets.DOCKERHUB_TOKEN }}
-   - name: Build and push Docker image
-     uses: docker/build-push-action@v4
-     with:
-       context: .
-       push: true
-       tags: ${{ secrets.DOCKERHUB_USERNAME }}/myapp:latest
-   - name: Start Minikube
-     run: |
-       minikube start
-   - name: Install NGINX Ingress Controller
-     run: |
-       kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/kind/deploy.yaml
-   - name: Install Helm and PostgreSQL
-     run: |
-       curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-       helm repo add bitnami https://charts.bitnami.com/bitnami
-       helm install my-postgres bitnami/postgresql \
-         --set auth.database=mydb \
-         --set auth.username=myuser \
-         --set auth.password=mypassword
-   - name: Configure Docker Hub credentials in Minikube
-     run: |
-       kubectl create secret docker-registry dockerhub-secret \
-         --docker-username=${{ secrets.DOCKERHUB_USERNAME }} \
-         --docker-password=${{ secrets.DOCKERHUB_TOKEN }} \
-         --docker-email=truonglocnguyenkhanh@gmail.com --dry-run=client -o yaml | kubectl apply -f -
-   - name: Deploy to Minikube
-     run: |
-       kubectl apply -f k8s/configmap.yaml
-       kubectl apply -f k8s/secret.yaml
-       kubectl apply -f k8s/deployment.yaml
-       kubectl apply -f k8s/service.yaml
-       kubectl apply -f k8s/ingress.yaml
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/myapp:latest
+
+    - name: Start Minikube
+      run: |
+        minikube start
+
+    - name: Install NGINX Ingress Controller
+      run: |
+        kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/kind/deploy.yaml
+
+    - name: Wait for Ingress Controller to be Ready
+      run: |
+        kubectl rollout status deployment ingress-nginx-controller -n ingress-nginx --timeout=120s
+
+    - name: Check Ingress Controller Pod Status
+      run: |
+        kubectl get pods -n ingress-nginx
+        kubectl describe pod -n ingress-nginx -l app.kubernetes.io/component=controller
+
+    - name: Install Helm and PostgreSQL
+      run: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        helm repo add bitnami https://charts.bitnami.com/bitnami
+        helm install my-postgres bitnami/postgresql \
+          --set auth.database=mydb \
+          --set auth.username=myuser \
+          --set auth.password=mypassword
+
+    - name: Configure Docker Hub credentials in Minikube
+      run: |
+        kubectl create secret docker-registry dockerhub-secret \
+          --docker-username=${{ secrets.DOCKERHUB_USERNAME }} \
+          --docker-password=${{ secrets.DOCKERHUB_TOKEN }} \
+          --docker-email=truonglocnguyenkhanh@gmail.com --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Deploy to Minikube
+      run: |
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/secret.yaml
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
+        kubectl apply -f k8s/ingress.yaml
+
+    - name: Show Kubernetes Events (for debugging if needed)
+      run: |
+        kubectl get events --sort-by=.metadata.creationTimestamp
