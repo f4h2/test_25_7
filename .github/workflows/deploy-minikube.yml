@@ -32,6 +32,11 @@ jobs:
       run: |
         minikube start
 
+    - name: Label node for Ingress
+      run: |
+        NODE_NAME=$(kubectl get nodes -o jsonpath="{.items[0].metadata.name}")
+        kubectl label node $NODE_NAME ingress-ready=true --overwrite
+
     - name: Install NGINX Ingress Controller
       run: |
         kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/kind/deploy.yaml
