@@ -21,21 +21,41 @@ spec:
         ports:
         - containerPort: 5000
         env:
-        - name: FLASK_ENV
-          valueFrom:
-            configMapKeyRef:
-              name: myapp-config
-              key: FLASK_ENV
-        - name: APP_NAME
-          valueFrom:
-            configMapKeyRef:
-              name: myapp-config
-              key: APP_NAME
-        - name: API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: myapp-secret
-              key: API_KEY
+          - name: FLASK_ENV
+            valueFrom:
+              configMapKeyRef:
+                name: myapp-config
+                key: FLASK_ENV
+          - name: APP_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: myapp-config
+                key: APP_NAME
+          - name: API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: myapp-secret
+                key: API_KEY
+          - name: DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: DB_HOST
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: DB_NAME
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: DB_USER
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: DB_PASSWORD
         resources:
           requests:
             cpu: "100m"

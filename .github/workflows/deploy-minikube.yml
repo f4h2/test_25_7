@@ -25,6 +25,17 @@ jobs:
    - name: Start Minikube
      run: |
        minikube start
+   - name: Install NGINX Ingress Controller
+     run: |
+       kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/kind/deploy.yaml
+   - name: Install Helm and PostgreSQL
+     run: |
+       curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+       helm repo add bitnami https://charts.bitnami.com/bitnami
+       helm install my-postgres bitnami/postgresql \
+         --set auth.database=mydb \
+         --set auth.username=myuser \
+         --set auth.password=mypassword
    - name: Configure Docker Hub credentials in Minikube
      run: |
        kubectl create secret docker-registry dockerhub-secret \
