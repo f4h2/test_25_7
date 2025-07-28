@@ -1,0 +1,21 @@
+
+#Đoạn YAML bạn cung cấp là một NetworkPolicy trong Kubernetes. Nó dùng để kiểm soát lưu lượng mạng vào (Ingress) các Pod được chọn
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: myapp-network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: myapp
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector: {}
+      namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: default
+    ports:
+    - protocol: TCP
+      port: 5000

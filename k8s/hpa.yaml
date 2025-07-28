@@ -1,0 +1,19 @@
+# cấu hình một HorizontalPodAutoscaler (HPA) trong Kubernetes, dùng để tự động scale số lượng Pod của một Deployment dựa trên mức độ sử dụng tài nguyên, cụ thể là CPU.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: myapp-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: myapp-deployment
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
